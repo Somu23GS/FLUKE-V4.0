@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Google Sheet setup — Assembly Heaters (Telugu)</title>
+<style>
+:root{--bg:#0b1220;--card:#111a2e;--line:#22304d;--text:#e6ecf7;--muted:#8a97b3;--acc:#ffc20e;--ok:#22c55e;--bad:#ef4444;--info:#38bdf8}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Telugu",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+main{max-width:860px;margin:0 auto;padding:16px 14px 60px}
+h1{font-size:22px;margin:8px 0 4px}h2{font-size:17px;margin:26px 0 8px;color:var(--acc)}h3{font-size:15px;margin:16px 0 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
+.step{display:flex;gap:12px;margin:14px 0}.n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--acc);color:#111;font-weight:900;display:flex;align-items:center;justify-content:center}
+.muted{color:var(--muted)}.ok{color:var(--ok)}.bad{color:var(--bad)}.info{color:var(--info)}
+code,pre{font-family:ui-monospace,Menlo,Consolas,monospace}code{background:#0f172a;border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:13px}
+pre{background:#0f172a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;font-size:12px;max-height:420px;white-space:pre}
+.btn{display:inline-block;background:var(--acc);color:#111;font-weight:800;border:0;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:#16203a}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;text-align:center;font-size:13px}.flow div{background:#16203a;border:1px solid var(--line);border-radius:10px;padding:10px 6px}
+.credit{margin-top:36px;text-align:center;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+kbd{background:#16203a;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12px}
+</style>
+</head>
+<body><main>
+<h1>📊 Google Sheet లో readings auto-save — Setup guide</h1>
+<p class="muted">Assembly Heaters app (v2026-09-04.12+) · ఒక్కసారి setup చేస్తే చాలు — తర్వాత ప్రతి <b>✓ Confirm</b> నొక్కగానే reading Google Sheet లో row గా save అవుతుంది.</p>
+
+<div class="card">
+<h3>🧠 Concept (సులభంగా)</h3>
+<div class="flow">
+ <div>📟 Fluke 378 FC<br><span class="muted">Bluetooth</span></div>
+ <div>📱 Phone లో app<br><span class="muted">✓ Confirm</span></div>
+ <div>☁ Internet<br><span class="muted">HTTPS POST</span></div>
+ <div>🤖 Apps Script<br><span class="muted">"Postman" script</span></div>
+ <div>📊 Google Sheet<br><span class="muted">Row auto create</span></div>
+</div>
+<p>Google Sheet కి నేరుగా phone నుంచి రాయలేము — మధ్యలో ఒక చిన్న <b>Postman</b> (Google Apps Script) కావాలి. అది మీ Google account లోనే, మీ Sheet లోపలే ఉంటుంది. App ఒక reading పంపగానే ఆ script దాన్ని సరైన row/column లో పెడుతుంది. <b>Free</b>, ఏ server అవసరం లేదు.</p>
+<p><b>Internet లేకపోతే?</b> Reading phone లో queue అవుతుంది ("Google Sheet: 3 pending"). Internet వచ్చాక వాటంతట అవే వెళ్తాయి. ఏదీ పోదు.</p>
+</div>
+
+<h2>🛠 Setup — 6 steps (ఒక్కసారే, ~10 నిమిషాలు, laptop/PC లో సులభం)</h2>
+
+<div class="step"><div class="n">1</div><div><b>కొత్త Google Sheet తయారు చేయండి</b><br>
+<a href="https://sheets.new" target="_blank" style="color:var(--info)">sheets.new</a> open చేయండి (మీ Gmail login). పేరు పెట్టండి: <code>Assembly Heaters Readings</code>. ఖాళీగా ఉంచండి — tabs/rows అన్నీ script తయారు చేస్తుంది.</div></div>
+
+<div class="step"><div class="n">2</div><div><b>Apps Script open చేయండి</b><br>
+Sheet menu లో <kbd>Extensions</kbd> → <kbd>Apps Script</kbd>. కొత్త tab లో editor వస్తుంది, అందులో <code>Code.gs</code> file ఉంటుంది (లోపల <code>function myFunction(){}</code> అని ఉంటుంది).</div></div>
+
+<div class="step"><div class="n">3</div><div><b>క్రింద ఉన్న code మొత్తం copy చేసి paste చేయండి</b><br>
+Editor లో ఉన్నది మొత్తం delete చేసి (Ctrl+A → Delete), క్రింద <b>📋 Copy code</b> నొక్కి, editor లో paste (Ctrl+V). తర్వాత <b>💾 Save</b> (Ctrl+S). Project పేరు అడిగితే <code>Heaters</code> అని ఇవ్వండి.</div></div>
+
+<div class="step"><div class="n">4</div><div><b>ఒక్కసారి <code>setup</code> run చేయండి (permission కోసం)</b><br>
+Editor పైన function dropdown లో <kbd>setup</kbd> select చేసి <kbd>▶ Run</kbd> నొక్కండి.<br>
+"Authorization required" → <kbd>Review permissions</kbd> → మీ Gmail select → <span class="bad">"Google hasn't verified this app"</span> అని వస్తే భయపడకండి (ఇది మీరే రాసిన script కాబట్టి) → <kbd>Advanced</kbd> → <kbd>Go to Heaters (unsafe)</kbd> → <kbd>Allow</kbd>.<br>
+Sheet లో <b>"Readings"</b> అనే tab పసుపు header తో వస్తుంది = success ✅</div></div>
+
+<div class="step"><div class="n">5</div><div><b>Web app గా Deploy చేయండి</b><br>
+కుడి పైన <kbd>Deploy</kbd> → <kbd>New deployment</kbd> → ⚙ (Select type) → <kbd>Web app</kbd><br>
+• Description: <code>heaters</code><br>
+• Execute as: <b>Me</b> (మీ email)<br>
+• Who has access: <b>Anyone</b> ← <span class="bad">ఇది చాలా ముఖ్యం</span> ("Anyone with Google account" కాదు)<br>
+<kbd>Deploy</kbd> → <b>Web app URL</b> వస్తుంది: <code>https://script.google.com/macros/s/AKfycb…/exec</code> → <kbd>Copy</kbd>.</div></div>
+
+<div class="step"><div class="n">6</div><div><b>App లో paste చేసి Test</b><br>
+Phone లో Heaters app → <kbd>Setup</kbd> tab → <b>Google Sheet — auto save</b> → URL paste → <kbd>🔗 Test connection</kbd>.<br>
+<span class="ok">"✔ Connected: Assembly Heaters Readings (0 rows)"</span> వస్తే అయిపోయింది 🎉. ఇప్పటికే phone లో ఉన్న readings పంపాలంటే <kbd>☁ Send ALL saved readings</kbd>.</div></div>
+
+<div class="card">
+<h3>📋 Code.gs — ఇది copy చేయండి</h3>
+<button class="btn" id="cp">📋 Copy code</button> <span id="cpMsg" class="ok"></span>
+<pre id="code">/**
+ *  Assembly Heaters → Google Sheet receiver   (Google Apps Script — Web App)   gs-4.0
+ *  ------------------------------------------------------------------------
+ *  HOW TO USE (details in google-sheet-telugu.html):
+ *   1. Open your Google Sheet → Extensions → Apps Script
+ *   2. Delete everything in Code.gs, paste THIS file, press Save (💾)
+ *   3. Run ▶ "setup" once → Review permissions → Allow   (creates the "Readings" sheet)
+ *   4. Deploy → New deployment → ⚙ Web app → Execute as: Me · Who has access: Anyone → Deploy
+ *   5. Copy the Web app URL (…/exec) → Heaters app → Setup (admin) → Google Sheet → Test
+ *   ★ After ANY change to this file: Deploy → Manage deployments → ✏ → Version: New → Deploy
+ *
+ *  WHAT IT CREATES (all rows are created automatically):
+ *   • "Readings"  – one row per confirmed reading (log). Re-capturing the same point
+ *                   UPDATES the same row (no duplicates). Clearing a cell deletes the row.
+ *   • "Board dd-mm-yyyy X" – one sheet per date + shift in the Excel layout
+ *                   (Heating zones / Phase / LINE-1 … LINE-7 / Remarks), zero → red cell,
+ *                   manual (typed) values → italic + cell note. Values are stored without sign (gs-2.1).
+ *                   Lead pot phase-imbalance error (from the app) → orange cell + "PHASE IMBALANCE ERROR" remark (gs-2.2).
+ *                   gs-2.4: out-of-range = reference ± tolerance (v29, pink cells; Settings tab gets reference_a / tolerance_a).
+ *                   gs-3.0: Areas (v3.0). PLP units (Meltpot, Eagle-01, Gravitypot MFX-01, Line-01, Line-02) log with columns S area · T unit_name,
+ *                           keys prefixed 'unit|'. Assembly rows/keys/Board tabs are unchanged.
+ *                   gs-3.2: PLP MONTH REGISTERS in the paper layout — one tab per unit + month ("Meltpot 09-2026", "Eagle-01 09-2026",
+ *                           "Gravitypot MFX-01 09-2026", "Lines 09-2026"): every day of the month pre-printed (Sunday rows grey),
+ *                           one row per date + shift with readings, columns = Date · Day · Shift · Time · Operator · point groups
+ *                           (Meltpot-1 | Meltpot-2 → Heater-1 R … · H1 … H12 · Line-01 | Line-02 → SP PV Load R/Y/B Cutoff R/Y/B) · Remarks.
+ *                           (The gs-3.0 per-line register tabs and the gs-3.1 per-shift tab were replaced by these.)
+ *                   gs-4.0: final release paired with app v4.0.0 — same tabs and behaviour as gs-3.2 (version string only).
+ *                   gs-2.3 (Phase 2): NA cells (grey, reason in Remarks), out-of-range (yellow), "RESOLVED ✔ note" in Remarks,
+ *                   Readings columns P na_reason · Q range · R resolved; actions board / history (live board + history in the app),
+ *                   photo (issue photo → Drive folder "Assembly Heaters photos"), mailcfg / mailtest (daily summary e-mail trigger).
+ *   • "Settings"  – HIDDEN sheet: app settings snapshot (components, zero threshold …)
+ *                   pushed by the admin from the app. Never contains the password.
+ *
+ *  ADMIN PASSWORD
+ *   • The app never sends the password itself — only its SHA-256 hash.
+ *   • The current hash is kept in Script Properties (ADMIN_HASH), invisible to sheet viewers.
+ *   • Changing the password in the app (Setup → Admin) updates it here automatically —
+ *     you do NOT need to edit this file.
+ *   • Forgot it?  Run ▶ resetAdminPassword() from this editor → back to the default.
+ *
+ *  This project corporates Somu &amp; Kiran · Powered by somu.ss74@gmail.com
+ */
+
+/* ===== [S1] SETTINGS YOU MAY CHANGE ===== */
+var LOG_SHEET  = 'Readings';
+var SET_SHEET  = 'Settings';
+var LINES      = 7;                                   // number of assembly lines (columns LINE-1 … LINE-7)
+var DEFAULT_ADMIN_HASH = '8dc42a1daaf8a4236c40a0e74b8579588ef11407c8f2696914c74eb18a4c22c9'; // hash of the default admin password (same as in assembly.html)
+/* ======================================== */
+
+var LOG_HEADER = ['saved_at','date','shift','line','battery_type','component','phase','value','unit','operator','meter','zero','captured_at','key','error','na_reason','range','resolved','area','unit_name'];   // O = PHASE IMBALANCE (gs-2.2) · P Q R = Phase 2 (gs-2.3) · S T = area / unit (gs-3.0)
+var GS_VERSION = 'gs-4.0';
+var KEY_COL = 14;                          // column N holds the row key (fixed since gs-1.0 — do not move)
+var PHOTO_FOLDER = 'Assembly Heaters photos';   // Drive folder for issue photos (created on first upload)
+
+/* ---------- entry points ---------- */
+function setup() {                       // run once from the editor to authorize + create the log sheet
+  var sh = getLog_();
+  try { MailApp.getRemainingDailyQuota(); DriveApp.getRootFolder(); } catch (_) {}   // gs-2.3: asks for Gmail + Drive permission now (daily e-mail, photos)
+  SpreadsheetApp.getActiveSpreadsheet().toast('Ready. "' + sh.getName() + '" sheet created. Now Deploy → Web app.', 'Assembly Heaters', 8);
+}
+function resetAdminPassword() {          // run from the editor if the admin password is forgotten
+  PropertiesService.getScriptProperties().deleteProperty('ADMIN_HASH');
+  settingsRow_('admin_password', 'reset to default at ' + new Date());
+  SpreadsheetApp.getActiveSpreadsheet().toast('Admin password reset to the default.', 'Assembly Heaters', 8);
+}
+
+function doGet(e) {                      // used by the app's "Test connection" button
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var log = getLog_();
+  return json_({ ok: true, spreadsheet: ss.getName(), url: ss.getUrl(), readings: Math.max(0, log.getLastRow() - 1), version: GS_VERSION });
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try {
+    lock.waitLock(25000); locked = true;
+    var body = JSON.parse((e &amp;&amp; e.postData &amp;&amp; e.postData.contents) || '{}');
+    var action = body.action || 'save';
+
+    if (action === 'ping')        return doGet(e);
+    if (action === 'auth')        return json_({ ok: true, auth: isAdmin_(body.hash) });
+    if (action === 'setpass') {
+      if (!isAdmin_(body.oldHash)) return json_({ ok: true, auth: false, error: 'Current password wrong' });
+      if (!body.newHash || String(body.newHash).length &lt; 32) return json_({ ok: false, error: 'Bad new password hash' });
+      PropertiesService.getScriptProperties().setProperty('ADMIN_HASH', String(body.newHash));
+      settingsRow_('admin_password', 'changed ' + new Date() + (body.by ? ' by ' + body.by : ''));
+      return json_({ ok: true, auth: true, changed: true });
+    }
+    if (action === 'settings') {
+      if (!isAdmin_(body.hash)) return json_({ ok: true, auth: false, error: 'Admin password required' });
+      saveSettings_(body.settings || {}, body.by);
+      return json_({ ok: true, auth: true, saved: true });
+    }
+    if (action === 'getsettings') {
+      if (!isAdmin_(body.hash)) return json_({ ok: true, auth: false, error: 'Admin password required' });
+      return json_({ ok: true, auth: true, settings: loadSettings_() });
+    }
+    /* ---- gs-2.3 Phase 2 actions ---- */
+    if (action === 'board')    return json_({ ok: true, items: boardItems_(body.date, body.shift, body.uid), version: GS_VERSION });          // live board: every reading of one date+shift (all phones)
+    if (action === 'history')  return json_({ ok: true, items: historyItems_(body.line, body.component, body.phase, body.days, body.uid), version: GS_VERSION });
+    if (action === 'photo') {
+      if (!body.data) return json_({ ok: false, error: 'No image data' });
+      var url = savePhoto_(body.name || 'photo.jpg', body.mime || 'image/jpeg', body.data, body.meta || {});
+      return json_({ ok: true, url: url, version: GS_VERSION });
+    }
+    if (action === 'mailcfg') {
+      if (!isAdmin_(body.hash)) return json_({ ok: true, auth: false, mail: true, error: 'Admin password required' });
+      var tz = setMailSchedule_(body.to || '', Number(body.hour), body.tz || '');
+      return json_({ ok: true, auth: true, mail: true, tz: tz, to: body.to || '', hour: Number(body.hour) });
+    }
+    if (action === 'mailtest') {
+      if (!isAdmin_(body.hash)) return json_({ ok: true, auth: false, mail: true, error: 'Admin password required' });
+      sendDailySummary_(body.to || '', true);
+      return json_({ ok: true, auth: true, mail: true, sent: true });
+    }
+
+    /* action === 'save'  → {items:[...], comps:[[name,'RYB'],...]} */
+    var items = body.items || [], comps = body.comps || [];
+    var log = getLog_(), keyIdx = loadKeys_(log), saved = 0, deleted = 0;
+    for (var i = 0; i &lt; items.length; i++) {
+      var it = items[i];
+      if (it.battOnly) { if (isAsm_(it)) setBattery_(it, comps); continue; }
+      if (it.del) { deleted += delReading_(log, keyIdx, it); }
+      else        { saveReading_(log, keyIdx, it); saved++; }
+      if (isAsm_(it)) updateBoard_(it, comps); else updateMonthRegister_(it, comps);   // gs-3.2: PLP units → month register tab in the paper layout
+    }
+    SpreadsheetApp.flush();
+    return json_({ ok: true, saved: saved, deleted: deleted, total: Math.max(0, log.getLastRow() - 1), version: GS_VERSION });
+  } catch (err) {
+    return json_({ ok: false, error: String(err &amp;&amp; err.message || err) });
+  } finally {
+    if (locked) { try { lock.releaseLock(); } catch (_) {} }
+  }
+}
+
+/* ---------- admin ---------- */
+function isAdmin_(hash) {
+  if (!hash) return false;
+  var cur = PropertiesService.getScriptProperties().getProperty('ADMIN_HASH') || DEFAULT_ADMIN_HASH;
+  return String(hash) === String(cur);
+}
+
+/* ---------- Settings (hidden sheet) ---------- */
+function getSettingsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SET_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(SET_SHEET);
+    sh.getRange(1, 1, 1, 3).setValues([['key', 'value', 'updated']]).setFontWeight('bold').setBackground('#ffe600');
+    sh.setColumnWidth(1, 160); sh.setColumnWidth(2, 520); sh.setColumnWidth(3, 170);
+    try { sh.hideSheet(); } catch (_) {}
+  }
+  return sh;
+}
+function settingsRow_(key, value) {
+  var sh = getSettingsSheet_(), n = sh.getLastRow(), row = 0;
+  if (n &gt; 1) { var keys = sh.getRange(2, 1, n - 1, 1).getValues(); for (var i = 0; i &lt; keys.length; i++) if (String(keys[i][0]) === key) { row = i + 2; break; } }
+  if (!row) row = n + 1;
+  sh.getRange(row, 1, 1, 3).setValues([[key, value, new Date()]]);
+}
+function saveSettings_(s, by) {
+  var keys = Object.keys(s);
+  for (var i = 0; i &lt; keys.length; i++) {
+    var v = s[keys[i]];
+    settingsRow_(keys[i], (typeof v === 'object') ? JSON.stringify(v) : String(v));
+  }
+  settingsRow_('updated_by', by || '');
+}
+function loadSettings_() {
+  var sh = getSettingsSheet_(), n = sh.getLastRow(), out = {};
+  if (n &gt; 1) {
+    var v = sh.getRange(2, 1, n - 1, 2).getValues();
+    for (var i = 0; i &lt; v.length; i++) {
+      var k = String(v[i][0]); if (!k || k === 'admin_password') continue;
+      var val = v[i][1]; try { if (typeof val === 'string' &amp;&amp; /^[\[{]/.test(val)) val = JSON.parse(val); } catch (_) {}
+      out[k] = val;
+    }
+  }
+  return out;
+}
+
+/* ---------- Readings log ---------- */
+function getLog_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(LOG_SHEET);
+  if (!sh) sh = ss.insertSheet(LOG_SHEET, 0);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, LOG_HEADER.length).setValues([LOG_HEADER]).setFontWeight('bold').setBackground('#ffe600');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 150); sh.setColumnWidth(13, 150); sh.setColumnWidth(14, 220);
+  }
+  if (sh.getMaxColumns() &gt;= 15 &amp;&amp; !sh.getRange(1, 15).getValue()) sh.getRange(1, 15).setValue('error').setFontWeight('bold').setBackground('#ffe600');   // gs-2.2: add the error header to an existing sheet
+  if (sh.getMaxColumns() &gt;= 18 &amp;&amp; !sh.getRange(1, 16).getValue()) sh.getRange(1, 16, 1, 3).setValues([['na_reason', 'range', 'resolved']]).setFontWeight('bold').setBackground('#ffe600');   // gs-2.3
+  if (sh.getMaxColumns() &gt;= 20 &amp;&amp; !sh.getRange(1, 19).getValue()) sh.getRange(1, 19, 1, 2).setValues([['area', 'unit_name']]).setFontWeight('bold').setBackground('#ffe600');   // gs-3.0
+  return sh;
+}
+function loadKeys_(sh) {                 // key → row number (column N)
+  var n = sh.getLastRow() - 1, m = {};
+  if (n &gt; 0) {
+    var keys = sh.getRange(2, KEY_COL, n, 1).getValues();
+    for (var i = 0; i &lt; keys.length; i++) if (keys[i][0]) m[String(keys[i][0])] = i + 2;
+  }
+  return m;
+}
+function isAsm_(it) { return !it.uid || it.uid === 'asm'; }                                   // gs-3.0: Assembly items have no uid (old app) or uid 'asm'
+function rowKey_(it) { return (isAsm_(it) ? '' : it.uid + '|') + [it.date, it.shift, it.line, it.component, it.phase || ''].join('|'); }   // Assembly keys unchanged since gs-1.0
+function saveReading_(sh, keyIdx, it) {
+  var key = rowKey_(it);
+  var row = [new Date(), it.date, it.shift, Number(it.line), it.batt || '', it.component, it.phase, toNum_(it.value), it.unit || '',
+             it.operator || '', it.meter || '', it.zero ? 'YES' : '', it.time ? new Date(Number(it.time)) : '', key];
+  var r = keyIdx[key];
+  if (!r) { r = sh.getLastRow() + 1; keyIdx[key] = r; }
+  sh.getRange(r, 1, 1, row.length).setValues([row]);
+  if (sh.getMaxColumns() &gt;= 15) sh.getRange(r, 15).setValue(it.error || '');   // error column (gs-2.2); older sheets without column O are left as they are
+  if (sh.getMaxColumns() &gt;= 18) sh.getRange(r, 16, 1, 3).setValues([[it.na || '', it.range || '', it.resolved || '']]);   // gs-2.3: P na_reason · Q range · R resolved
+  if (sh.getMaxColumns() &gt;= 20) sh.getRange(r, 19, 1, 2).setValues([[it.area || 'Assembly', it.uname || (isAsm_(it) ? 'Assembly' : it.uid)]]);   // gs-3.0: S area · T unit
+  sh.getRange(r, 1).setNumberFormat('dd-mm-yyyy hh:mm:ss'); sh.getRange(r, 13).setNumberFormat('dd-mm-yyyy hh:mm:ss');
+  var vc = sh.getRange(r, 8);
+  if (isNA_(it))       vc.setBackground('#e2e8f0').setFontColor('#334155');
+  else if (it.zero)    vc.setBackground('#fecaca').setFontColor('#b91c1c');
+  else if (it.error)   vc.setBackground('#ffedd5').setFontColor('#9a3412');
+  else if (it.range)   vc.setBackground('#ffe4e6').setFontColor('#b91c1c');
+  else                 vc.setBackground(null).setFontColor(null);
+  vc.setFontStyle(isManual_(it) ? 'italic' : 'normal');
+}
+function delReading_(sh, keyIdx, it) {
+  var key = rowKey_(it), r = keyIdx[key];
+  if (!r) return 0;
+  sh.deleteRow(r); delete keyIdx[key];
+  for (var k in keyIdx) if (keyIdx[k] &gt; r) keyIdx[k]--;
+  return 1;
+}
+function toNum_(v) { var n = parseFloat(v); return isNaN(n) ? String(v == null ? '' : v) : Math.abs(n); }   // gs-2.1: magnitude only (no minus sign)
+function isManual_(it) { return String(it.meter || '').indexOf('MANUAL') === 0; }
+function isNA_(it) { return String(it.value) === 'NA' || String(it.meter || '') === 'NA'; }   // gs-2.3: point not measured
+
+/* ---------- Board sheet (Excel layout) ---------- */
+function dmy_(iso) { var p = String(iso).split('-'); return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : String(iso); }
+function boardName_(it) { return 'Board ' + dmy_(it.date) + ' ' + (it.shift || ''); }
+function lineCol_(line) { return 2 + Number(line); }          // LINE-1 → column C
+function remarksCol_() { return 2 + LINES + 1; }              // column J
+
+function getBoard_(it, comps) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), name = boardName_(it);
+  var sh = ss.getSheetByName(name);
+  if (sh) return sh;
+  sh = ss.insertSheet(name);
+  var cols = remarksCol_();
+  sh.getRange(1, 1, 1, cols).merge().setValue('Assembly lines Heaters monitoring status').setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center');
+  sh.getRange(2, 1).setValue('Operator:').setFontWeight('bold'); sh.getRange(2, 2).setValue(it.operator || '');
+  sh.getRange(2, 4).setValue('Date:').setFontWeight('bold');     sh.getRange(2, 5).setValue(dmy_(it.date));
+  sh.getRange(2, 7).setValue('Shift:').setFontWeight('bold');    sh.getRange(2, 8).setValue(it.shift || '');
+  sh.getRange(3, 1).setValue('Battery Types:-').setFontWeight('bold');
+  var hdr = ['Heating zones', 'Phase'];
+  for (var L = 1; L &lt;= LINES; L++) hdr.push('LINE-' + L);
+  hdr.push('Remarks');
+  sh.getRange(4, 1, 1, cols).setValues([hdr]).setFontWeight('bold').setBackground('#ffe600').setHorizontalAlignment('center');
+  var rows = [];
+  for (var c = 0; c &lt; comps.length; c++) { var ph = String(comps[c][1] || 'R'); for (var j = 0; j &lt; ph.length; j++) rows.push([comps[c][0], ph.charAt(j)]); }
+  if (!rows.length) rows.push([it.component, it.phase]);
+  sh.getRange(5, 1, rows.length, 2).setValues(rows);
+  var i = 0;
+  while (i &lt; rows.length) {                                     // merge component name over its phases
+    var j2 = i; while (j2 + 1 &lt; rows.length &amp;&amp; rows[j2 + 1][0] === rows[i][0]) j2++;
+    if (j2 &gt; i) sh.getRange(5 + i, 1, j2 - i + 1, 1).merge();
+    sh.getRange(5 + i, 1).setVerticalAlignment('middle').setFontWeight('bold');
+    i = j2 + 1;
+  }
+  sh.getRange(4, 1, rows.length + 1, cols).setBorder(true, true, true, true, true, true);
+  sh.getRange(5, 2, rows.length, 1).setHorizontalAlignment('center').setFontWeight('bold');
+  sh.getRange(5, 3, rows.length, LINES).setHorizontalAlignment('center');
+  sh.getRange(3, 3, 1, LINES).setHorizontalAlignment('center').setFontWeight('bold');
+  sh.setColumnWidth(1, 140); sh.setColumnWidth(2, 60);
+  for (var cc = 3; cc &lt; 3 + LINES; cc++) sh.setColumnWidth(cc, 75);
+  sh.setColumnWidth(cols, 260);
+  sh.setFrozenRows(4);
+  return sh;
+}
+function findBoardRow_(sh, comp, phase) {
+  var n = sh.getLastRow(); if (n &lt; 5) return 0;
+  var vals = sh.getRange(5, 1, n - 4, 2).getValues(), cur = '';
+  for (var i = 0; i &lt; vals.length; i++) {
+    if (vals[i][0] !== '' &amp;&amp; vals[i][0] != null) cur = String(vals[i][0]);
+    if (cur === String(comp) &amp;&amp; String(vals[i][1]) === String(phase)) return 5 + i;
+  }
+  return 0;
+}
+function setBattery_(it, comps) {
+  var sh = getBoard_(it, comps);
+  sh.getRange(3, lineCol_(it.line)).setValue(it.batt || '').setHorizontalAlignment('center').setFontWeight('bold');
+}
+function updateBoard_(it, comps) {
+  var sh = getBoard_(it, comps);
+  var r = findBoardRow_(sh, it.component, it.phase);
+  if (!r) {                                                     // component not in the list → auto-create a row
+    r = sh.getLastRow() + 1;
+    sh.getRange(r, 1, 1, 2).setValues([[it.component, it.phase]]).setFontWeight('bold');
+    sh.getRange(r, 1, 1, remarksCol_()).setBorder(true, true, true, true, true, true);
+    sh.getRange(r, 3, 1, LINES).setHorizontalAlignment('center');
+  }
+  var col = lineCol_(it.line), cell = sh.getRange(r, col);
+  if (it.del) { cell.clearContent().clearNote().setBackground(null).setFontColor(null).setFontWeight('normal').setFontStyle('normal'); setRemark_(sh, r, it, false); return; }
+  cell.setValue(isNA_(it) ? 'NA' : toNum_(it.value));
+  if (isNA_(it))     cell.setBackground('#e2e8f0').setFontColor('#334155').setFontWeight('bold');   // gs-2.3: not measured → grey
+  else if (it.zero)  cell.setBackground('#fecaca').setFontColor('#b91c1c').setFontWeight('bold');
+  else if (it.error) cell.setBackground('#ffedd5').setFontColor('#9a3412').setFontWeight('bold');   // gs-2.2: Lead pot phase imbalance → orange
+  else if (it.range) cell.setBackground('#ffe4e6').setFontColor('#b91c1c').setFontWeight('bold');   // gs-2.4: outside reference ± tolerance → pink (was yellow in gs-2.3)
+  else               cell.setBackground(null).setFontColor(null).setFontWeight('normal');
+  if (isManual_(it)) cell.setFontStyle('italic').setNote('Manual entry (typed by hand, no meter): ' + it.meter + ' · ' + new Date());
+  else               cell.setFontStyle('normal').clearNote();
+  if (it.batt) sh.getRange(3, col).setValue(it.batt).setHorizontalAlignment('center').setFontWeight('bold');
+  if (it.operator) {
+    var cur = String(sh.getRange(2, 2).getValue() || '');
+    if (!cur) sh.getRange(2, 2).setValue(it.operator);
+    else if (cur.indexOf(it.operator) &lt; 0) sh.getRange(2, 2).setValue(cur + ', ' + it.operator);
+  }
+  setRemark_(sh, r, it, !!it.zero, it.error || '');
+}
+function setRemark_(sh, r, it, isZero, error) {               // Remarks: "L1 R = 0 (check heater)" / "L1 B PHASE IMBALANCE ERROR" / "L2 R NA (Line down)" / "L1 R 31.2 ABOVE MAX 28" / "L1 B RESOLVED ✔ Heater replaced"
+  var rc = sh.getRange(r, remarksCol_()), tag = 'L' + it.line + ' ' + it.phase;
+  var cur = String(rc.getValue() || ''), parts = cur ? cur.split(' · ') : [], out = [];
+  for (var i = 0; i &lt; parts.length; i++) if (parts[i].indexOf(tag + ' ') !== 0) out.push(parts[i]);
+  if (it.del) { rc.setValue(out.join(' · ')).setFontColor(out.length ? '#b91c1c' : null); return; }
+  if (isNA_(it))   out.push(tag + ' NA (' + (it.na || 'not measured') + ')');
+  else if (isZero) out.push(tag + ' = 0 (check heater)');
+  else if (error)  out.push(tag + ' ' + error + ' ERROR');
+  else if (it.range) out.push(tag + ' ' + toNum_(it.value) + ' ' + it.range);
+  if (it.resolved) out.push(tag + ' RESOLVED ✔ ' + it.resolved);
+  rc.setValue(out.join(' · ')).setFontColor(out.length ? '#b91c1c' : null);
+}
+
+/* ---------- gs-2.3 Phase 2: live board + history (read from the Readings log) ---------- */
+function logRows_() {                     // every row of the Readings log as objects (cheap enough for a few thousand rows)
+  var sh = getLog_(), n = sh.getLastRow() - 1; if (n &lt; 1) return [];
+  var w = Math.min(sh.getLastColumn(), LOG_HEADER.length), v = sh.getRange(2, 1, n, w).getValues(), out = [];
+  for (var i = 0; i &lt; v.length; i++) {
+    var r = v[i]; if (!r[13]) continue;
+    out.push({ date: isoDate_(r[1]), shift: String(r[2]), line: Number(r[3]), batt: r[4], component: String(r[5]), phase: String(r[6]), value: r[7], unit: r[8], operator: r[9], meter: r[10], zero: r[11] === 'YES',
+               time: (r[12] instanceof Date) ? r[12].getTime() : (r[0] instanceof Date ? r[0].getTime() : 0), error: r[14] || '', na: r[15] || '', range: r[16] || '', resolved: r[17] || '',
+               area: r[18] || 'Assembly', uid: uidOfKey_(r[13]), uname: r[19] || '' });
+  }
+  return out;
+}
+function isoDate_(d) { if (d instanceof Date) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd'); return String(d); }
+function uidOfKey_(k) { var p = String(k || '').split('|'); return p.length &gt;= 6 ? p[0] : 'asm'; }   // gs-3.0: 'melt|2026-09-24|A|1|Heater-1|R' → 'melt'; old 5-part keys → Assembly
+function boardItems_(date, shift, uid) { var all = logRows_(), out = [], u = uid || 'asm'; for (var i = 0; i &lt; all.length; i++) if (all[i].date === String(date) &amp;&amp; all[i].shift === String(shift) &amp;&amp; all[i].uid === u) out.push(all[i]); return out; }
+function historyItems_(line, component, phase, days, uid) {
+  var all = logRows_(), out = [], lim = new Date(); lim.setDate(lim.getDate() - (Number(days) || 90)); var limIso = Utilities.formatDate(lim, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var u = uid || 'asm';
+  for (var i = 0; i &lt; all.length; i++) { var r = all[i]; if (r.uid === u &amp;&amp; r.line === Number(line) &amp;&amp; r.component === String(component) &amp;&amp; r.phase === String(phase || '') &amp;&amp; r.date &gt;= limIso) out.push(r); }
+  out.sort(function (a, b) { return a.date &lt; b.date ? -1 : a.date &gt; b.date ? 1 : (a.shift &lt; b.shift ? -1 : 1); });
+  return out;
+}
+
+/* ---------- gs-2.3: issue photo → Drive ---------- */
+function savePhoto_(name, mime, b64, meta) {
+  var folders = DriveApp.getFoldersByName(PHOTO_FOLDER), folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(PHOTO_FOLDER);
+  var blob = Utilities.newBlob(Utilities.base64Decode(b64), mime, name);
+  var f = folder.createFile(blob);
+  try { f.setDescription(JSON.stringify(meta)); f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+  settingsRow_('last_photo', f.getUrl());
+  return f.getUrl();
+}
+
+/* ---------- gs-2.3: daily summary e-mail (time trigger) ---------- */
+function setMailSchedule_(to, hour, tz) {
+  var props = PropertiesService.getScriptProperties();
+  var trig = ScriptApp.getProjectTriggers();
+  for (var i = 0; i &lt; trig.length; i++) if (trig[i].getHandlerFunction() === 'dailySummaryJob') ScriptApp.deleteTrigger(trig[i]);
+  props.setProperty('MAIL_TO', to || ''); props.setProperty('MAIL_HOUR', String(isNaN(hour) ? 6 : hour));
+  var zone = tz || Session.getScriptTimeZone() || 'Asia/Kolkata';
+  if (to) { ScriptApp.newTrigger('dailySummaryJob').timeBased().everyDays(1).atHour(isNaN(hour) ? 6 : hour).inTimezone(zone).create(); }
+  settingsRow_('daily_mail', to ? (to + ' at ' + hour + ':00 ' + zone) : 'off');
+  return zone;
+}
+function dailySummaryJob() { var to = PropertiesService.getScriptProperties().getProperty('MAIL_TO'); if (to) sendDailySummary_(to, false); }
+function sendDailySummary_(to, isTest) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), all = logRows_();
+  var d = new Date(); if (!isTest) d.setDate(d.getDate() - 1);     // scheduled run = yesterday; test = today
+  var day = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd'), dmy = dmy_(day);
+  var rows = all.filter(function (r) { return r.date === day; });
+  if (!rows.length &amp;&amp; !isTest) { var last = ''; all.forEach(function (r) { if (r.date &lt; day &amp;&amp; r.date &gt; last) last = r.date; }); if (last) { day = last; dmy = dmy_(day); rows = all.filter(function (r) { return r.date === day; }); } }
+  var shifts = {}; rows.forEach(function (r) { var gk = (r.uid === 'asm' ? '' : r.area + ' ' + (r.uname || r.uid) + ' · ') + 'Shift ' + r.shift;   // gs-3.0: one block per unit + shift
+    var s = shifts[gk] = shifts[gk] || { n: 0, zero: [], err: [], rng: [], na: [], fix: [], ops: {}, lines: {} }; s.n++; s.lines[r.line] = 1; if (r.operator) s.ops[r.operator] = 1;
+    var tag = (r.uid === 'asm' ? 'L' + r.line : '#' + r.line) + ' ' + r.component + (r.phase ? ' ' + r.phase : '');
+    if (r.na) s.na.push(tag + ' (' + r.na + ')'); else if (r.zero) s.zero.push(tag); else if (r.error) s.err.push(tag + ' ' + r.error); else if (r.range) s.rng.push(tag + ' ' + r.value + ' ' + r.range);
+    if (r.resolved) s.fix.push(tag + ' — ' + r.resolved); });
+  var html = '&lt;div style="font-family:Arial,sans-serif;font-size:14px;color:#0f172a"&gt;&lt;h2 style="margin:0 0 4px"&gt;Assembly Heaters — daily summary&lt;/h2&gt;&lt;div style="color:#64748b;margin-bottom:12px"&gt;' + dmy + (isTest ? ' · TEST e-mail' : '') + ' · ' + ss.getName() + '&lt;/div&gt;';
+  var text = 'Assembly Heaters — daily summary ' + dmy + '\n';
+  var keys = Object.keys(shifts).sort(function (a, b) { var pa = a.indexOf('Shift ') === 0 ? 0 : 1, pb = b.indexOf('Shift ') === 0 ? 0 : 1; return pa - pb || (a &lt; b ? -1 : a &gt; b ? 1 : 0); });   // Assembly first, then the PLP units
+  if (!keys.length) { html += '&lt;p&gt;No readings were saved on ' + dmy + '.&lt;/p&gt;'; text += 'No readings.\n'; }
+  keys.forEach(function (k) { var s = shifts[k]; var ok = !s.zero.length &amp;&amp; !s.err.length &amp;&amp; !s.rng.length;
+    html += '&lt;div style="border:1px solid #e2e8f0;border-left:6px solid ' + (ok ? '#16a34a' : '#dc2626') + ';border-radius:10px;padding:10px 12px;margin-bottom:10px"&gt;&lt;b&gt;' + k + '&lt;/b&gt; — ' + s.n + ' readings · ' + (k.indexOf('Shift ') === 0 ? 'lines ' : 'units ') + Object.keys(s.lines).join(', ') + ' · ' + (Object.keys(s.ops).join(', ') || '—') + '&lt;br&gt;'
+      + '&lt;span style="color:#b91c1c"&gt;Zero: ' + s.zero.length + '&lt;/span&gt; · &lt;span style="color:#9a3412"&gt;Errors: ' + s.err.length + '&lt;/span&gt; · &lt;span style="color:#854d0e"&gt;Range: ' + s.rng.length + '&lt;/span&gt; · NA: ' + s.na.length + '&lt;br&gt;'
+      + (s.zero.length ? '&lt;div style="margin-top:6px"&gt;&lt;b&gt;Zero:&lt;/b&gt; ' + s.zero.join(', ') + '&lt;/div&gt;' : '') + (s.err.length ? '&lt;div&gt;&lt;b&gt;Errors:&lt;/b&gt; ' + s.err.join(', ') + '&lt;/div&gt;' : '') + (s.rng.length ? '&lt;div&gt;&lt;b&gt;Out of range:&lt;/b&gt; ' + s.rng.join(', ') + '&lt;/div&gt;' : '') + (s.na.length ? '&lt;div&gt;&lt;b&gt;NA:&lt;/b&gt; ' + s.na.join(', ') + '&lt;/div&gt;' : '') + (s.fix.length ? '&lt;div style="color:#166534"&gt;&lt;b&gt;Resolved ✔:&lt;/b&gt; ' + s.fix.join(', ') + '&lt;/div&gt;' : '') + '&lt;/div&gt;';
+    text += k + ': ' + s.n + ' readings · zero ' + s.zero.length + ' · errors ' + s.err.length + ' · range ' + s.rng.length + ' · NA ' + s.na.length + '\n' + (s.zero.length ? '  Zero: ' + s.zero.join(', ') + '\n' : '') + (s.err.length ? '  Errors: ' + s.err.join(', ') + '\n' : '') + (s.rng.length ? '  Range: ' + s.rng.join(', ') + '\n' : '') + (s.na.length ? '  NA: ' + s.na.join(', ') + '\n' : ''); });
+  var openIss = all.filter(function (r) { return (r.zero || r.error) &amp;&amp; !r.resolved &amp;&amp; r.date &gt;= Utilities.formatDate(new Date(Date.now() - 7 * 86400000), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }).length;
+  html += '&lt;div style="margin:8px 0"&gt;Open zero / error points in the last 7 days (not marked resolved): &lt;b&gt;' + openIss + '&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;a href="' + ss.getUrl() + '"&gt;Open the Google Sheet&lt;/a&gt;&lt;/div&gt;&lt;div style="color:#94a3b8;font-size:12px;margin-top:14px"&gt;This project corporates Somu &amp;amp; Kiran · Powered by somu.ss74@gmail.com&lt;/div&gt;&lt;/div&gt;';
+  text += 'Sheet: ' + ss.getUrl() + '\n';
+  MailApp.sendEmail({ to: to, subject: 'Assembly Heaters — ' + dmy + (isTest ? ' (test)' : '') + ' summary', htmlBody: html, body: text, name: 'Assembly Dashboard' });
+  settingsRow_('last_mail', to + ' · ' + new Date());
+}
+
+/* ---------- helpers ---------- */
+function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+/* ---------- gs-3.2: PLP month register (paper layout) — one tab per unit + month, e.g. 'Meltpot 09-2026' ---------- */
+var REG_META = 5;                                             // A Date · B Day · C Shift · D Time · E Operator, then the point columns, then Remarks
+var REG_HDR  = 3;                                             // row 1 title · row 2 line groups · row 3 point heads · data from row 4
+var MONTHS_  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DOW_     = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function pointHead_(c, p) { return String(c) + (p ? ' ' + p : ''); }
+function ymOf_(iso) { return String(iso || '').slice(0, 7); }                                   // '2026-09'
+function regName_(it) { var ym = ymOf_(it.date).split('-'); return (it.uname || it.uid) + ' ' + ym[1] + '-' + ym[0]; }
+function ymLabel_(iso) { var ym = ymOf_(iso).split('-'); return MONTHS_[Number(ym[1]) - 1] + ' ' + ym[0]; }
+function unitLines_(it) { var n = Number(it.ulines) || 1, out = []; for (var L = 1; L &lt;= n; L++) out.push(n === 1 ? String(it.uname || it.uid) : String(it.ulabel || '') + L); return out; }
+function lineLabel_(it) { var n = Number(it.ulines) || 1; return n === 1 ? String(it.uname || it.uid) : String(it.ulabel || '') + (Number(it.line) || 1); }
+function compHeads_(comps) { var h = []; for (var c = 0; c &lt; (comps || []).length; c++) { var ph = String(comps[c][1] || 'S'); if (ph === 'S') h.push(pointHead_(comps[c][0], '')); else for (var j = 0; j &lt; ph.length; j++) h.push(pointHead_(comps[c][0], ph.charAt(j))); } return h; }
+function getRegister_(it, comps) {                            // creates the month tab with every day pre-printed
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), name = regName_(it), sh = ss.getSheetByName(name);
+  if (sh) return sh;
+  sh = ss.insertSheet(name);
+  var heads = compHeads_(comps); if (!heads.length) heads.push(pointHead_(it.component, it.phase));
+  var lines = unitLines_(it), nL = lines.length, w = REG_META + heads.length * nL + 1;
+  sh.getRange(1, 1, 1, w).merge().setValue(String(it.utitle || it.uname || it.uid) + ' — ' + ymLabel_(it.date)).setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center');
+  var meta = ['Date', 'Day', 'Shift', 'Time', 'Operator'];
+  for (var m = 0; m &lt; meta.length; m++) sh.getRange(2, m + 1, 2, 1).merge().setValue(meta[m]);
+  var hdr3 = [];
+  for (var L = 0; L &lt; nL; L++) { var c0 = REG_META + 1 + L * heads.length; sh.getRange(2, c0, 1, heads.length).merge().setValue(lines[L]).setBackground('#fde68a'); hdr3 = hdr3.concat(heads); }
+  sh.getRange(3, REG_META + 1, 1, hdr3.length).setValues([hdr3]);
+  sh.getRange(2, w, 2, 1).merge().setValue('Remarks');
+  sh.getRange(2, 1, 2, w).setFontWeight('bold').setBackground('#ffe600').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true);
+  for (var L2 = 0; L2 &lt; nL; L2++) sh.getRange(2, REG_META + 1 + L2 * heads.length).setBackground('#fde68a');
+  var ym = ymOf_(it.date).split('-'), y = Number(ym[0]), mo = Number(ym[1]), nd = new Date(y, mo, 0).getDate(), rows = [];
+  for (var d = 1; d &lt;= nd; d++) { var dt = new Date(y, mo - 1, d); rows.push([('0' + d).slice(-2) + '-' + ('0' + mo).slice(-2) + '-' + y, DOW_[dt.getDay()], '', '', '']); }
+  sh.getRange(REG_HDR + 1, 1, nd, REG_META).setValues(rows).setHorizontalAlignment('center');
+  sh.getRange(REG_HDR + 1, 1, nd, 1).setFontWeight('bold');
+  for (var r = 0; r &lt; nd; r++) if (rows[r][1] === 'Sun') sh.getRange(REG_HDR + 1 + r, 1, 1, w).setBackground('#f1f5f9').setFontColor('#64748b');
+  sh.getRange(REG_HDR + 1, 1, nd, w).setBorder(true, true, true, true, true, true);
+  sh.setColumnWidth(1, 92); sh.setColumnWidth(2, 46); sh.setColumnWidth(3, 46); sh.setColumnWidth(4, 56); sh.setColumnWidth(5, 110); for (var c = REG_META + 1; c &lt; w; c++) sh.setColumnWidth(c, 68); sh.setColumnWidth(w, 260);
+  sh.setFrozenRows(REG_HDR); sh.setFrozenColumns(1);
+  return sh;
+}
+function regHeads_(sh) {                                      // [{group, head}] per column (merged group cells carry the label only in their first column)
+  var w = sh.getLastColumn(); if (w &lt; REG_META + 1) return [];
+  var g = sh.getRange(2, 1, 1, w).getValues()[0], h = sh.getRange(3, 1, 1, w).getValues()[0], out = [], cur = '';
+  for (var i = 0; i &lt; w; i++) { if (String(g[i]) !== '') cur = String(g[i]); out.push({ group: cur, head: String(h[i]) }); }
+  return out;
+}
+function regCol_(sh, it) {                                    // column of this line + point; a new point (Components changed) is added before Remarks
+  var heads = regHeads_(sh), head = pointHead_(it.component, it.phase), label = lineLabel_(it), remC = 0;
+  for (var i = REG_META; i &lt; heads.length; i++) { if (heads[i].group === 'Remarks' || heads[i].head === 'Remarks') { remC = i + 1; break; } if (heads[i].group === label &amp;&amp; heads[i].head === head) return i + 1; }
+  var col = remC || heads.length + 1;
+  sh.insertColumnBefore(col);
+  sh.getRange(2, col).setValue(label).setFontWeight('bold').setBackground('#fde68a').setHorizontalAlignment('center');
+  sh.getRange(3, col).setValue(head).setFontWeight('bold').setBackground('#ffe600').setHorizontalAlignment('center');
+  sh.getRange(2, col, sh.getLastRow() - 1, 1).setBorder(true, true, true, true, true, true);
+  return col;
+}
+function regRow_(sh, it) {                                    // row of date + shift: the pre-printed day row when its shift is free, else a new row inside that day (kept in A → B → C order)
+  var d = dmy_(it.date), sft = String(it.shift || ''), n = sh.getLastRow(), v = n &gt;= REG_HDR + 1 ? sh.getRange(REG_HDR + 1, 1, n - REG_HDR, 3).getValues() : [], free = 0, last = 0, before = 0;
+  for (var i = 0; i &lt; v.length; i++) if (String(v[i][0]) === d) { last = REG_HDR + 1 + i; if (String(v[i][2]) === sft) return last; if (String(v[i][2]) === '' &amp;&amp; !free) free = last; if (!before &amp;&amp; String(v[i][2]) &gt; sft) before = last; }
+  var w = Math.max(sh.getLastColumn(), REG_META + 1);
+  if (free) { sh.getRange(free, 3).setValue(sft); return free; }
+  var r = before ? before : (last ? last + 1 : n + 1);
+  if (before) sh.insertRowBefore(r); else sh.insertRowAfter(r - 1);
+  var day = last ? sh.getRange(before ? r + 1 : last, 2).getValue() : '';
+  sh.getRange(r, 1, 1, 3).setValues([[d, day, sft]]).setHorizontalAlignment('center'); sh.getRange(r, 1).setFontWeight('bold');
+  if (String(day) === 'Sun') sh.getRange(r, 1, 1, w).setBackground('#f1f5f9').setFontColor('#64748b');
+  sh.getRange(r, 1, 1, w).setBorder(true, true, true, true, true, true);
+  return r;
+}
+function updateMonthRegister_(it, comps) {
+  var sh = getRegister_(it, comps), r = regRow_(sh, it), col = regCol_(sh, it), heads = regHeads_(sh), remC = 0;
+  for (var i = REG_META; i &lt; heads.length; i++) if (heads[i].head === 'Remarks' || heads[i].group === 'Remarks') { remC = i + 1; break; }
+  if (!remC) remC = sh.getLastColumn();
+  var nL = Number(it.ulines) || 1, tag = (nL &gt; 1 ? lineLabel_(it) + ' ' : '') + pointHead_(it.component, it.phase);
+  var cell = sh.getRange(r, col), rc = sh.getRange(r, remC), cur = String(rc.getValue() || ''), parts = cur ? cur.split(' · ') : [], out = [];
+  for (var k = 0; k &lt; parts.length; k++) if (parts[k].indexOf(tag + ' ') !== 0 &amp;&amp; parts[k] !== tag) out.push(parts[k]);
+  var sunday = String(sh.getRange(r, 2).getValue()) === 'Sun', base = sunday ? '#f1f5f9' : null;
+  if (it.del) { cell.clearContent().clearNote().setBackground(base).setFontColor(null).setFontWeight('normal').setFontStyle('normal'); rc.setValue(out.join(' · ')).setFontColor(out.length ? '#b91c1c' : null); return; }
+  cell.setValue(isNA_(it) ? 'NA' : toNum_(it.value)).setHorizontalAlignment('center');
+  if (isNA_(it))     cell.setBackground('#e2e8f0').setFontColor('#334155').setFontWeight('bold');
+  else if (it.zero)  cell.setBackground('#fecaca').setFontColor('#b91c1c').setFontWeight('bold');
+  else if (it.range) cell.setBackground('#ffe4e6').setFontColor('#b91c1c').setFontWeight('bold');
+  else               cell.setBackground(base).setFontColor('#000000').setFontWeight('normal');
+  if (isManual_(it)) cell.setFontStyle('italic').setNote('Manual entry (typed by hand, no meter): ' + it.meter + ' · ' + new Date());
+  else               cell.setFontStyle('normal').clearNote();
+  if (it.time) { var tc = sh.getRange(r, 4), t = new Date(Number(it.time)), cv = tc.getValue(); if (!cv || (cv instanceof Date &amp;&amp; t &lt; cv)) tc.setValue(t).setNumberFormat('HH:mm').setHorizontalAlignment('center'); }
+  if (it.operator) { var oc = sh.getRange(r, 5), o = String(oc.getValue() || ''); if (!o) oc.setValue(it.operator); else if (o.indexOf(it.operator) &lt; 0) oc.setValue(o + ', ' + it.operator); }
+  if (isNA_(it))        out.push(tag + ' NA (' + (it.na || 'not measured') + ')');
+  else if (it.zero)     out.push(tag + ' = 0 (check heater)');
+  else if (it.range)    out.push(tag + ' ' + toNum_(it.value) + ' ' + it.range);
+  if (it.resolved)      out.push(tag + ' RESOLVED ✔ ' + it.resolved);
+  rc.setValue(out.join(' · ')).setFontColor(out.length ? '#b91c1c' : null).setHorizontalAlignment('left');
+}
+</pre>
+</div>
+
+<h2>📊 Sheet లో ఏం వస్తుంది? (rows auto create)</h2>
+<div class="card">
+<h3>Tab 1: <code>Readings</code> — log (ప్రతి reading ఒక row)</h3>
+<table><tr><th>saved_at</th><th>date</th><th>shift</th><th>line</th><th>battery_type</th><th>component</th><th>phase</th><th>value</th><th>unit</th><th>operator</th><th>meter</th><th>zero</th><th>captured_at</th></tr>
+<tr><td>04-09-2026 09:12:05</td><td>2026-09-04</td><td>A</td><td>2</td><td>200 Ah</td><td>Right pipe</td><td>Y</td><td>-9.0</td><td>A</td><td>Kiran</td><td>378FC #7K2Q</td><td></td><td>04-09-2026 09:12:03</td></tr>
+<tr><td>04-09-2026 09:12:40</td><td>2026-09-04</td><td>A</td><td>2</td><td>200 Ah</td><td>Lead pot</td><td>Y</td><td style="background:#fecaca;color:#b91c1c">0</td><td>A</td><td>Kiran</td><td>378FC #7K2Q</td><td>YES</td><td>04-09-2026 09:12:38</td></tr></table>
+<p class="muted">అదే point మళ్ళీ Confirm చేస్తే <b>అదే row update</b> అవుతుంది (duplicate రాదు). App లో ✕ Clear చేస్తే row delete అవుతుంది. Filter / pivot / graph కి ఇది వాడండి.</p>
+<h3>Tab 2: <code>Board 04-09-2026 A</code> — మీ Excel layout (రోజు + shift కి ఒక tab, auto)</h3>
+<table><tr><th>Heating zones</th><th>Phase</th><th>LINE-1</th><th>LINE-2</th><th>LINE-3</th><th>…</th><th>LINE-7</th><th>Remarks</th></tr>
+<tr><td colspan="2"><b>Battery Types:-</b></td><td>100 Ah</td><td>200 Ah</td><td></td><td></td><td></td><td></td></tr>
+<tr><td rowspan="3">Lead pot</td><td>R</td><td>-25.5</td><td>-25.1</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Y</td><td>-25.0</td><td style="background:#fecaca;color:#b91c1c"><b>0</b></td><td></td><td></td><td></td><td style="color:#b91c1c">L2 Y = 0 (check heater)</td></tr>
+<tr><td>B</td><td>-16.2</td><td>-16.0</td><td></td><td></td><td></td><td></td></tr>
+<tr><td rowspan="2">Lift pipe</td><td>R</td><td>-9.0</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Y</td><td>-9.0</td><td></td><td></td><td></td><td></td><td></td></tr></table>
+<p class="muted">Operator, Date, Shift పైన header లో; Battery type ప్రతి line column పైన; zero reading ఎర్రగా + Remarks లో గమనిక. Component list app లో మార్చితే కొత్త Board tab లో అదే list వస్తుంది; list లో లేని component వస్తే row auto add అవుతుంది.</p>
+</div>
+
+<h2>📱 App లో ఏం కనిపిస్తుంది?</h2>
+<div class="card">
+<ul>
+<li>Entry page లో ▲Up/▼Down కింద చిన్న pill: <span class="ok">● Google Sheet: saved ✔ 09:12:05</span> / <span class="info">● 3 pending</span> / <span class="bad">● error — see Setup</span></li>
+<li><b>☁ Sync now</b> — pending ఉంటే వెంటనే పంపుతుంది (సాధారణంగా అవసరం లేదు, auto వెళ్తాయి)</li>
+<li>Setup → Google Sheet card లో: queue, last sync time, sheet లో మొత్తం rows, last error</li>
+<li><b>📄 Open Sheet</b> — Test తర్వాత Sheet నేరుగా open అవుతుంది</li>
+<li>Report footer లో "Google Sheet ✔" లేదా "(N pending)"</li>
+<li>New day/clear నొక్కినప్పుడు pending ఉంటే హెచ్చరిక వస్తుంది</li>
+</ul></div>
+
+<h2>👥 ఇద్దరు operators / 2 phones?</h2>
+<div class="card"><p>ఒకే Web app URL ని రెండు phones లో paste చేయండి. ఇద్దరూ ఒకే Sheet లోకి రాస్తారు. ఒకే రోజు + shift అయితే ఒకే Board tab లో వేరే వేరే lines నింపవచ్చు — Operator cell లో ఇద్దరి పేర్లూ వస్తాయి (ఉదా: "Somu, Kiran").</p></div>
+
+<h2>🔧 Problems వస్తే</h2>
+<div class="card"><table>
+<tr><th>Message</th><th>కారణం / పరిష్కారం</th></tr>
+<tr><td>"Not a JSON reply — check the URL…"</td><td>Deploy లో <b>Who has access = Anyone</b> కాదు, లేదా URL <code>/exec</code> తో end అవలేదు (<code>/dev</code> కాదు). మళ్ళీ Deploy → Manage deployments → ✏ Edit → Anyone → Deploy.</td></tr>
+<tr><td>"Script error: … permission"</td><td>Step 4 (Run setup → Allow) చేయలేదు. మళ్ళీ చేయండి.</td></tr>
+<tr><td>Test OK కానీ rows రావట్లేదు</td><td>Sheet లో <b>Readings</b> tab చూడండి (Board tab కాదు). Browser లో Sheet refresh చేయండి. App Setup console లో "Sheet: saved 1" వస్తుందా చూడండి.</td></tr>
+<tr><td>Code మార్చిన తర్వాత పని చేయట్లేదు</td><td>Code మార్చిన ప్రతిసారీ <b>Deploy → Manage deployments → ✏ → Version: New version → Deploy</b> చేయాలి (URL మారదు).</td></tr>
+<tr><td>"3 pending (offline)"</td><td>Phone కి internet లేదు. వచ్చాక auto వెళ్తాయి, లేదా ☁ Sync now.</td></tr>
+<tr><td>Google "This app isn't verified"</td><td>మీరే రాసిన script కాబట్టి safe. Advanced → Go to Heaters (unsafe) → Allow.</td></tr>
+</table></div>
+
+
+<h2>🔐 Admin password — Settings lock (v…12)</h2>
+<div class="card">
+<p><b>Operators</b> కి Entry + Board మాత్రమే కనిపిస్తాయి. <b>⚙ Setup</b> tab, <b>Clear this board</b>, component list, thresholds, capture mode (Confirm / AUTO), Google Sheet URL — ఇవన్నీ <b>admin password</b> అడుగుతాయి. (<b>v…21 నుంచి</b> <b>✎ Manual</b> కి password అవసరం లేదు — ఎవరైనా వాడవచ్చు, కానీ అది ఎప్పుడూ MANUAL అని mark అవుతుంది.) Header లో 🔒 badge tap చేసినా password box వస్తుంది.</p>
+<ul>
+<li>Password సరైనది అయితే <span class="info">🔓 ADMIN</span> badge వస్తుంది; ఆ phone లో <b>8 గంటలు</b> (ఒక shift) unlock గా ఉంటుంది. <b>🔒 Lock admin</b> నొక్కితే వెంటనే lock.</li>
+<li><b>Password ఎక్కడా plain గా save అవదు</b> — phone లో, Sheet లో దాని SHA-256 hash మాత్రమే ఉంటుంది. Sheet చూసే వాళ్ళకి password కనిపించదు.</li>
+<li><b>🔑 Change password</b> (Setup → Admin): current → new → repeat. కొత్త password <b>phone లోనూ + Google Sheet script లోనూ</b> ఒకేసారి update అవుతుంది → అదే Sheet URL వాడే <b>అన్ని phones</b> కి కొత్త password పని చేస్తుంది (internet ఉండాలి).</li>
+<li><b>✎ Manual</b> value: meter లేకుండా చేత్తో టైప్ చేసిన reading (v…21: password లేకుండా ఎవరైనా). Table/report లో <i>italic + ✎ / *</i> గా కనిపిస్తుంది, CSV లో <code>manual = YES</code>, Sheet లో italic + cell note "Manual entry (typed by hand, no meter)", meter column లో <code>MANUAL (పేరు)</code>. అంటే ఏది meter reading, ఏది manual అనేది ఎప్పుడూ తెలుస్తుంది.</li>
+<li><b>v4.0 — Final release (gs-4.0) + AUTO scan window:</b> App v4.0.0 = v3.2 PLP registers + కొత్త AUTO scan window field. Code.gs లో version string మాత్రమే gs-4.0 అయింది (tabs, behaviour gs-3.2 లాగే) — ఒకసారి paste చేసి redeploy చేస్తే Sheet test లో <code>gs-4.0</code> కనిపించాలి. Setup → Capture లో కొత్త <b>AUTO scan window</b> field — 2 s / 3 s / 4 s (default) / 5 s. AUTO button లో “ON · 2 s”, Entry hint “Clamp on and hold 2 s” అలా మారుతాయి. Setup → Features → <i>AUTO scan window</i> OFF చేస్తే పాత fixed 4 s. Sheet Settings snapshot లో <code>auto_window_s</code> గా కనిపిస్తుంది. Redeploy అవసరం లేదు.</li>
+<li><b>v3.2 — PLP paper-layout month registers (gs-3.2):</b> <b>All PLP</b> chip ఇప్పుడు paper register లాగే <b>నెల register</b> చూపిస్తుంది — ప్రతి unit కి ఒక table (Meltpot-1 | Meltpot-2 → Heater-1/2 → R Y B · Eagle-01 H1…H12 · Gravitypot H1…H12 · Lines → Line-01 | Line-02 → SP PV Load R/Y/B Cutoff R/Y/B), rows = నెలలోని ప్రతి తేదీ (reading ఉన్న shift కి ఒక row, Sunday rows grey), ◀ ▶ తో నెల మార్చవచ్చు. Line-01/Line-02 chips కలిపి ఒకే <b>Lines</b> chip (Assembly లాగా Line-01 / Line-02 buttons, shift కి ఒకే reading, rounds లేవు). PDF = ప్రతి register కి ఒక A4 landscape page, image = 4 registers ఒకే JPG, CSV = నెల మొత్తం. Signatures: heaters → <b>Prepared By / Checked By</b>, Lines → <b>Supervisor</b>. Sheet లో ఇప్పుడు <b>నెల tabs మాత్రమే</b> — <b>“Meltpot 09-2026”, “Eagle-01 09-2026”, “Gravitypot MFX-01 09-2026”, “Lines 09-2026”</b> (ప్రతి రోజు ముందే print అయి ఉంటుంది, Sunday grey; ఒక రోజు 2 shifts అయితే 2 rows); పాత “PLP Meltpot” / “PLP dd-mm-yyyy A” tabs ఇక రావు (పాతవి చేత్తో delete చేయవచ్చు). Readings log, Assembly Board tabs మారవు. <b>Code.gs మళ్ళీ paste చేసి Deploy → Manage deployments → Edit → New version చేయండి</b> (URL మారదు).</li>
+<li><b>v3.1 — All PLP ఒకే page (gs-3.1):</b> PLP strip లో మొదటి chip <b>All PLP</b> నొక్కితే Board tab లో Meltpot, Eagle-01, Gravitypot MFX-01, Line-01, Line-02 అన్నీ ఒకే page లో register layout లో (rows = Meltpot-1/2 / Round 1–4, columns = points, Time, Remarks) కనిపిస్తాయి. Share PDF = ఒకే A4 landscape page (5 units + signatures), Share image = ఒకే JPG, CSV = అన్ని units rows. Entry unit-wise గానే ఉంటుంది. Sheet లో ప్రతి date + shift కి కొత్త tab <b>“PLP dd-mm-yyyy A”</b> వస్తుంది (5 units ఒకదాని కింద ఒకటి), పాత “PLP Meltpot”… register tabs కూడా అలాగే ఉంటాయి. <b>Code.gs మళ్ళీ paste చేసి Deploy → Manage deployments → ✏ → New version → Deploy</b> చేయాలి. Setup → Features → <b>All PLP board (one page)</b> OFF చేస్తే chip పోతుంది.</li>
+<li><b>v3.0 — Areas: Assembly · PLP (gs-3.0):</b> Tabs కింద కొత్త <b>Assembly / PLP</b> strip. PLP నొక్కితే unit chips — <b>Meltpot</b> (Meltpot-1/2 × Heater-1, Heater-2 R/Y/B), <b>Eagle-01</b> (H1…H12, H7/H11 లేవు), <b>Gravitypot MFX-01</b> (H1…H12, H4/H7 లేవు), <b>Line-01 / Line-02</b> (Round 1–4 × SP, PV, Load R/Y/B, Cutoff R/Y/B). ప్రతి unit కి సొంత boards, Components list, Reference values. Sheet లో Readings log కి <code>S area · T unit_name</code> columns వస్తాయి; PLP readings <b>“PLP Meltpot”, “PLP Line-01”</b>… అనే register tabs లో (ఒక row = date + shift + Meltpot/Round) save అవుతాయి. Assembly rows, keys, Board tabs ఏమీ మారవు. Cutoff 0 A normal → red కాదు. Setup → Features → <b>Areas</b> OFF చేస్తే strip మాయం, Assembly మాత్రమే. <b>ఈ update కి Code.gs మళ్ళీ paste + New version deploy చేయాలి.</b></li>
+<li><b>v…30 — Share image + PDF size fix:</b> Board లో కొత్త <b>Share image</b> button — board మొత్తం ఒక phone-size picture (JPG) గా WhatsApp కి వెళ్తుంది, chat లోనే పెద్దగా కనిపిస్తుంది (PDF open చేయనక్కర్లేదు). Signatures వల్ల 3 MB అయిన PDF ఇప్పుడు ~80 KB. Sheet code (gs-3.0) మారలేదు.</li>
+<li><b>v…29 — Reference values ± tolerance (gs-3.0):</b> Setup → <b>Reference values (A)</b> లో ప్రతి component కి R/Y/B reference విలువ + ఒక <b>Alarm tolerance ±</b> (default 5 A). Reading reference ± tolerance బయట ఉంటే cell ఎర్రటి ▲/▼, ఒక చిన్న toast + vibration, Remarks / PDF / Sheet లో "OUT OF RANGE". Sheet లో range cell ఇప్పుడు pink (ముందు yellow). Lead pot కి reference ఉంటే పాత phase-imbalance rule ఆగిపోతుంది. Apps Script లో ఈ కొత్త code paste చేసి <b>Deploy → Manage deployments → Edit → New version</b> చేయండి (URL మారదు).</li>
+<li><b>v…28 — Floating chat bubble:</b> ప్రతి page లో కుడి-కింద గుండ్రటి chat బటన్ — నొక్కితే Insights chat పూర్తి screen లో (WhatsApp లాగా). ఎర్ర సంఖ్య = కొత్త abnormal readings. ⋮ menu లో operator (password లేకుండా) bubble ని దాచవచ్చు / badge ఆపవచ్చు / chat మొత్తం WhatsApp కి పంపవచ్చు. Admin: Setup → Features → <i>Insights chat</i>. (Code.gs మార్పు లేదు.)</li>
+<li><b>v…27 — Share sheet fix + Insights chat:</b> <b>Share report</b> నొక్కగానే ఇప్పుడు ఫోన్ share sheet (WhatsApp / Drive / Gmail) వస్తుంది — PDF ముందే background లో తయారవుతుంది. Share రాకపోతే <b>"Report ready"</b> బాక్స్: <i>Share PDF</i> · <i>Save PDF to phone</i> · <i>WhatsApp summary</i>. Board లోని <b>Insights chat</b> — bot చెప్పే remarks ఎడమ వైపు, మీ ప్రశ్నలు కుడి వైపు; ప్రతి answer కు Copy + WhatsApp. Setup → Features → <i>Insights chat</i> తో ON/OFF. (Code.gs మార్పు లేదు — redeploy అవసరం లేదు.)</li>
+<li><b>v…26 — Digital signatures + print fix:</b> Board లో <b>Signatures</b> card — Operator → Supervisor → In-charge వరుసగా వేలితో sign చేస్తారు; PDF report కింద మూడు signatures pen-ink లాగా print అవుతాయి. Sheet లో ఏమీ మారదు (Code.gs gs-2.3 అలాగే). Shift report PDF ని ఇప్పుడు app తనే తయారు చేస్తుంది (phone print dialog లేదు) — ఎప్పుడూ <b>ఒకే A4 landscape page</b>, WhatsApp/Drive share sheet నేరుగా వస్తుంది; Period report ఎన్ని pages అయినా పూర్తిగా వస్తుంది. Board లో కొత్త <b>Insights</b> card (rule-based bot, offline) abnormal readings / repeated problems / trends / pending చెబుతుంది.</li>
+<li><b>v…25 — Phase 2 (gs-2.3):</b> Readings tab లో కొత్త columns P <b>na_reason</b> · Q <b>range</b> · R <b>resolved</b>. Board tab లో NA cell grey (Remarks: "L2 R NA (Line down)"), range బయట value yellow ("L1 R 31.2 ABOVE MAX 28"), Issues tab లో Resolved చేస్తే "RESOLVED ✔ note". కొత్త actions: <b>board</b> (Live board — అన్ని phones readings), <b>history</b> (90 days), <b>photo</b> (Issue photo → Drive folder "Assembly Heaters photos"), <b>mailcfg / mailtest</b> (రోజూ summary e-mail — trigger). ★ ఈ script paste చేశాక <b>Run ▶ setup</b> మళ్ళీ ఒకసారి చేయాలి (Gmail + Drive permission అడుగుతుంది → Allow), తర్వాత Deploy → Manage deployments → ✏ → New version.</li>
+<li><b>v…24 — Lead pot phase imbalance error (gs-2.2):</b> Lead pot R, Y, B మూడూ capture అయ్యాక, ఏ phase అయినా highest phase కంటే <b>6 A పైగా తక్కువ</b> ఉంటే (ఉదా. 25 / 25 / 16 → B) app లో ERROR pop-up + orange ⚠ cell; Sheet లో ఆ cell orange, Remarks లో <code>L1 B PHASE IMBALANCE ERROR</code>, Readings tab లో కొత్త <code>error</code> column (O). Limit Setup లో మార్చవచ్చు. Code.gs కొత్తది paste చేసి <b>Deploy → New version</b> చేయాలి.</li>
+<li><b>v…21 — minus sign లేదు:</b> app, PDF, CSV, Sheet అన్నింటిలో value magnitude మాత్రమే (−24.5 → <b>24.5</b>). Code.gs <code>gs-2.1</code> లో <code>toNum_</code> కూడా <code>Math.abs</code> చేస్తుంది — పాత app version నుంచి వచ్చినా Sheet లో minus రాదు. <b>Sheet tabs:</b> ప్రతి Date + Shift కి ఒక "Board dd-mm-yyyy A/B/C" tab (ముందులానే); app లో కూడా ఇప్పుడు ప్రతి Date + Shift కి వేరే board ఉంటుంది.</li>
+<li>Settings (component list, zero threshold, UUIDs, battery types) కూడా Sheet లో hidden <b>Settings</b> tab లో save అవుతాయి (View → Hidden sheets లో చూడవచ్చు).</li>
+<li><b>Password మర్చిపోతే:</b> Apps Script editor → function dropdown లో <code>resetAdminPassword</code> → ▶ Run → default password కి వెళ్తుంది. Phone లో కూడా default కి రావాలంటే: Chrome → Site settings → Storage → Clear (data పోతుంది, ముందు report తీసుకోండి) — లేదా default password తో login చేసినప్పుడు Sheet నుంచి verify అవుతుంది.</li>
+</ul>
+<p class="bad">⚠ Default password ని మొదటి రోజే మార్చండి. Password ని WhatsApp లో పంపకండి.</p>
+</div>
+
+<h2>🧩 Future changes — code లో ఎక్కడ ఏది? (developer map)</h2>
+<div class="card">
+<p><code>assembly.html</code> మొదట్లో ఒక <b>DEVELOPER MAP</b> comment ఉంది. File లో ఆ tag ని search (Ctrl+F) చేస్తే ఆ భాగానికి వెళ్తుంది:</p>
+<table>
+<tr><th>Tag</th><th>ఏం ఉంటుంది</th><th>ఉదాహరణ మార్పు</th></tr>
+<tr><td><code>[A1]</code></td><td>Colours (CSS variables)</td><td><code>--acc:#ffc20e</code> ని <code>#22c55e</code> చేస్తే theme పసుపు → ఆకుపచ్చ</td></tr>
+<tr><td><code>[A2]</code></td><td>Layout CSS, admin/manual styles</td><td>manual cell రంగు <code>td.man</code></td></tr>
+<tr><td><code>[B2]</code> / <code>[B3]</code> / <code>[B4]</code></td><td>Entry / Board / Setup HTML</td><td>కొత్త button add చేయడం</td></tr>
+<tr><td><code>[C1]</code></td><td>DEFAULT_COMP list, LINES, QUICK battery chips, APP_VERSION</td><td>8వ line కావాలంటే <code>LINES=[1..8]</code> + Code.gs లో <code>LINES=8</code></td></tr>
+<tr><td><code>[C2]</code></td><td>Admin: hash, unlock, change password, manual</td><td>unlock సమయం <code>ADMIN_TTL</code></td></tr>
+<tr><td><code>[C3]</code></td><td>Confirm / Up / Down / Clear / Stop</td><td>—</td></tr>
+<tr><td><code>[C4]</code></td><td>Google Sheet queue + sender</td><td>batch size, retry time</td></tr>
+<tr><td><code>[C5]</code></td><td>Bluetooth + packet parser</td><td>వేరే meter model</td></tr>
+<tr><td><code>[C6]</code></td><td>Board table, PDF report, CSV</td><td>report లో కొత్త column</td></tr>
+<tr><td><code>[C7]</code></td><td>Update banner / service worker</td><td>—</td></tr>
+<tr><td><code>Code.gs [S1]</code></td><td>Sheet names, LINES, default hash</td><td>—</td></tr>
+</table>
+<p class="muted">Release checklist: <code>APP_VERSION</code> + footer "v2026-…" (assembly.html), <code>VERSION</code> (sw.js) పెంచండి → zip → upload → phone లో "↻ Update". Code.gs మార్చితే Deploy → Manage deployments → ✏ → New version.</p>
+</div>
+
+<h2>🔒 Security గురించి</h2>
+<div class="card"><p>"Anyone" అంటే: <b>ఆ పొడవాటి URL తెలిసిన వాళ్ళు మాత్రమే</b> readings పంపగలరు (URL guess చేయడం అసాధ్యం). Sheet చదవడానికి/edit చేయడానికి మాత్రం మీ Google login కావాలి — Sheet sharing మీ చేతిలోనే. URL ని WhatsApp group లో వేయకండి; operators phones లో మాత్రమే paste చేయండి.</p></div>
+
+<div class="credit">This project corporates <b>Somu &amp; Kiran</b><br>Powered by somu.ss74@gmail.com</div>
+</main>
+<script>
+document.getElementById('cp').onclick=async()=>{ const t=document.getElementById('code').textContent; try{ await navigator.clipboard.writeText(t); }catch(e){ const r=document.createRange(); r.selectNodeContents(document.getElementById('code')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); } document.getElementById('cpMsg').textContent='✔ Copied — Apps Script editor లో paste చేయండి'; };
+</script>
+</body></html>

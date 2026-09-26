@@ -1,0 +1,32 @@
+{
+  "id": "./assembly.html",
+  "name": "Assembly Dashboard",
+  "short_name": "Assembly",
+  "description": "Assembly lines heaters reading entry \u2014 Fluke 378 FC live capture",
+  "start_url": "./assembly.html?v=4.0.0",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f9",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icon-assembly-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-assembly-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-assembly-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
