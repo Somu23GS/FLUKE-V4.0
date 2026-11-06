@@ -2,7 +2,7 @@
    - HTML pages: NETWORK-FIRST (so updates appear immediately when online), cache fallback when offline
    - Icons/manifests: cache-first, refreshed in background
    - Notifies open pages when a new version is activated */
-const VERSION = 'v400';
+const VERSION = 'v401';
 const CACHE = 'fluke-dash-' + VERSION;
 const FILES = ['./', './index.html', './assembly.html', './vivarana-telugu.html', './manifest.json', './manifest-assembly.json', './google-sheet-telugu.html', './icon-192.png', './icon-512.png', './icon-assembly-192.png', './icon-assembly-512.png'];
 
